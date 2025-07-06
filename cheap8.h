@@ -94,10 +94,17 @@ struct Cheap8 {
                     case 0x00E0:
                     clear();
                     break;
+                    case 0x00EE:
+                    ret();
+                    break;
+
                 }
             break;
             case 0x1000:
             jp();
+            break;
+            case 0x2000:
+            call();
             break;
             case 0xD000:
             draw_sprite();
@@ -120,8 +127,18 @@ struct Cheap8 {
         }
     }
 
+    void ret() {
+        pc = stack[--s_ptr];
+        pc += 2;
+    }
+
     void jp() {
         pc = opcode & 0x0FFF;
+    }
+
+    void call() {
+        stack[s_ptr++] = pc;
+        jp();
     }
 
     void ld_i(short opcode) {
@@ -183,10 +200,10 @@ struct Cheap8 {
 
     void loop() {
         while (!renderer.should_quit) {
-            if (draw_flag) {
+            // if (draw_flag) {
                 renderer.render(screen);
                 draw_flag = false;
-            }
+            // }
             next();
 
             renderer.poll_events();
@@ -222,7 +239,7 @@ struct Cheap8 {
     unsigned char delay_timer;
     unsigned char sound_timer;
 
-    unsigned short stack; // Current stack
+    unsigned short stack[16]; // Current stack
     unsigned short s_ptr; // Stack ptr
 
     bool draw_flag = false;
