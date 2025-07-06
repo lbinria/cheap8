@@ -106,20 +106,36 @@ struct Cheap8 {
             case 0x2000:
             call();
             break;
-            case 0xD000:
-            draw_sprite();
-            break;
-            case 0xA000:
-            ld_i(opcode);
-            break;
             case 0x3000:
             se_vx();
+            break;
+            case 0x4000:
+            sne_vx();
+            break;
+            case 0x5000:
+            se_vx_vy();
             break;
             case 0x6000:
             ld_vx(opcode);
             break;
             case 0x7000:
             add_vx();
+            break;
+            case 0x8000:
+                switch (opcode & 0x000F) {
+                    case 0x0000:
+                    ld_vx_vy();
+                    break;
+                }
+            break;
+            case 0x9000:
+            sne_vx_vy();
+            break;
+            case 0xD000:
+            draw_sprite();
+            break;
+            case 0xA000:
+            ld_i(opcode);
             break;
             default:
             std::cout << "end" << std::endl;
@@ -157,8 +173,34 @@ struct Cheap8 {
         pc += 2;
     }
 
+    void ld_vx_vy() {
+        V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
+        pc += 2;
+    }
+
     void se_vx() {
         if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) {
+            pc += 2;
+        }
+        pc += 2;
+    }
+
+    void sne_vx() {
+        if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) {
+            pc += 2;
+        }
+        pc += 2;
+    }
+
+    void se_vx_vy() {
+        if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4]) {
+            pc += 2;
+        }
+        pc += 2;
+    }
+
+    void sne_vx_vy() {
+        if (V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]) {
             pc += 2;
         }
         pc += 2;
