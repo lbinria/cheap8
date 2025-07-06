@@ -183,10 +183,10 @@ struct Cheap8 {
 
     void loop() {
         while (!renderer.should_quit) {
-            // if (draw_flag) {
+            if (draw_flag) {
                 renderer.render(screen);
                 draw_flag = false;
-            // }
+            }
             next();
 
             renderer.poll_events();
