@@ -126,6 +126,24 @@ struct Cheap8 {
                     case 0x0000:
                     ld_vx_vy();
                     break;
+                    case 0x0001:
+                    or_vx_vy();
+                    break;
+                    case 0x0002:
+                    and_vx_vy();
+                    break;
+                    case 0x0003:
+                    xor_vx_vy();
+                    break;
+                    case 0x0004:
+                    add_vx_vy();
+                    break;
+                    case 0x0005:
+                    sub_vx_vy();
+                    break;
+                    case 0x0006:
+                    shr_vx();
+                    break;
                 }
             break;
             case 0x9000:
@@ -143,13 +161,44 @@ struct Cheap8 {
         }
     }
 
+    inline short _0x000F() {
+        return opcode & 0x000F;
+    }
+    inline short _0x00F0() {
+        return (opcode & 0x00F0) >> 4;
+    }
+    inline short _0x0F00() {
+        return (opcode & 0x0F00) >> 8;
+    }
+    inline short _0x00FF() {
+        return opcode & 0x00FF;
+    }
+    inline short _0x0FFF() {
+        return opcode & 0x0FFF;
+    }
+    
+    unsigned char& VX() {
+        return V[_0x0F00()];
+    }
+
+    unsigned char& VY() {
+        return V[_0x00F0()];
+    }
+
+    unsigned char& VC() {
+        return V[0xF];
+    }
+
+    
+
+
     void ret() {
         pc = stack[--s_ptr];
         pc += 2;
     }
 
     void jp() {
-        pc = opcode & 0x0FFF;
+        pc = _0x0FFF();
     }
 
     void call() {
@@ -158,49 +207,89 @@ struct Cheap8 {
     }
 
     void ld_i(short opcode) {
-        I = (opcode & 0x0FFF);
+        I = _0x0FFF();
         pc+=2;
     }
 
     void ld_vx(short opcode) {
-        V[(opcode & 0x0F00) >> 8] = opcode & 0x00FF;
+        VX() = _0x00FF();
         pc+=2;
-
     }
 
     void add_vx() {
-        V[(opcode & 0x0F00) >> 8] += opcode & 0x00FF;
+        VX() += _0x00FF();
         pc += 2;
     }
 
     void ld_vx_vy() {
-        V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
+        VX() = VY();
+        pc += 2;
+    }
+
+    void or_vx_vy() {
+        VX() |= VY();
+        pc += 2;
+    }
+
+    void and_vx_vy() {
+        VX() &= VY();
+        pc += 2;
+    }
+
+    void xor_vx_vy() {
+        VX() ^= VY();
+        pc += 2;
+    }
+
+    void add_vx_vy() {
+        short res = VX() + VY();
+        if (res > 255)
+            VC() = 1;
+
+        VX() = res;
+        pc += 2;
+    }
+
+    void sub_vx_vy() {
+        if (V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4])
+            VC() = 1;
+            
+        V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
+        pc += 2;
+    }
+
+    // Not sure of this
+    void shr_vx() {
+        V[(opcode & 0x0F00) >> 8] >>= 1;
+        if (V[(opcode & 0x0F00) & (0x80 >> 7)] == 1)
+            VC() = 1;
+
         pc += 2;
     }
 
     void se_vx() {
-        if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) {
+        if (VX() == _0x00FF()) {
             pc += 2;
         }
         pc += 2;
     }
 
     void sne_vx() {
-        if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) {
+        if (VX() != _0x00FF()) {
             pc += 2;
         }
         pc += 2;
     }
 
     void se_vx_vy() {
-        if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4]) {
+        if (VX() == VY()) {
             pc += 2;
         }
         pc += 2;
     }
 
     void sne_vx_vy() {
-        if (V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4]) {
+        if (VX() != VY()) {
             pc += 2;
         }
         pc += 2;
@@ -214,12 +303,12 @@ struct Cheap8 {
     }
 
     void draw_sprite() {
-        V[0xF] = 0;
+        VC() = 0;
 
         // Decode opcode
-        short x = V[(opcode & 0x0F00) >> 8];
-        short y = V[(opcode & 0x00F0) >> 4];
-        short h = opcode & 0x000F;
+        short x = VX();
+        short y = VY();
+        short h = _0x000F();
 
         for (int row = 0; row < h; ++row) {
             draw_row(x, y, row, memory[I + row]);
@@ -233,7 +322,7 @@ struct Cheap8 {
             if ((row & (0x80 >> col)) != 0) {
                 auto &val = screen[x + col + (y + nrow) * 64];
                 if (val)
-                    V[0xF] = 1;
+                    VC() = 1;
 
                 screen[x + col + (y + nrow) * 64] ^= true;
             }
@@ -254,14 +343,6 @@ struct Cheap8 {
 
     void clean() {
         renderer.clean();
-    }
-
-    void draw() {
-
-    }
-
-    void render() {
-
     }
 
     void input() {
