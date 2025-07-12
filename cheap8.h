@@ -159,6 +159,7 @@ struct Cheap8 {
             std::cout << "end" << std::endl;
             break;
         }
+        // TODO pc += 2, and return instead of break when no increment
     }
 
     inline short _0x000F() {
